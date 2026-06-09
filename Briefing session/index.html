@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>說明會互動投票</title>
+    <style>
+      body { font-family: '微軟正黑體', sans-serif; background-color: #f4f7f6; padding: 15px; margin: 0; }
+      .container { max-width: 500px; margin: 20px auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+      h2 { color: #333; font-size: 20px; margin-bottom: 8px; text-align: center; }
+      .subtitle { color: #666; font-size: 14px; text-align: center; margin-bottom: 20px; }
+      
+      /* 16個選項的網格排版 */
+      .options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 25px; }
+      
+      /* 自訂美化 Checkbox 樣式 */
+      .option-label {
+        display: block; padding: 12px; background: #f8fafc; border: 2px solid #e2e8f0;
+        border-radius: 8px; cursor: pointer; font-size: 15px; text-align: center;
+        transition: all 0.2s; user-select: none;
+      }
+      .option-input { display: none; }
+      .option-input:checked + .option-label {
+        background-color: #e1f5fe; border-color: #0288d1; color: #0288d1; font-weight: bold;
+      }
+      
+      button { 
+        width: 100%; background-color: #0288d1; color: white; padding: 14px; 
+        border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; 
+      }
+      button:hover { background-color: #0277bd; }
+      button:disabled { background-color: #b0bec5; cursor: not-allowed; }
+      #msg { text-align: center; font-weight: bold; margin-top: 15px; color: #2e7d32; }
+    </style>
+  </head>
+  <body>
+
+    <div class="container" id="voteBox">
+      <h2>📊 互動調查</h2>
+      <div class="subtitle">請勾選您感興趣的主題（可複選）</div>
+      
+      <div class="options-grid" id="optionsContainer"></div>
+      
+      <button onclick="submitVote()" id="submitBtn">送出投票</button>
+      <div id="msg"></div>
+    </div>
+
+    <script>
+      const API_URL = 'https://script.google.com/macros/s/AKfycbxFNinnfKetaUQa4s07js1J0xB3SMztKc1vtCZYu4dAnq7N1exNlzzL65mC3VvRbarzdQ/exec';
+
+      // 🎯 在這裡直接修改您的 16 個選項文字
+      const options = [
+        "ChatGPT", "Google Gemini", "Perplexity", "Microsoft Copilot",
+        "Claude", "Google Ai Studio", "Canva AI", "Gamma",
+        "Adobe GenStudio", "Notion AI", "Midjourney", "Suno",
+        "DeepSeek", "Seedance2", "King AI", "豆包"
+      ];
+
+      // 自動渲染 16 個選項
+      const container = document.getElementById('optionsContainer');
+      options.forEach((opt, index) => {
+        container.innerHTML += `
+          <div>
+            <input type="checkbox" id="opt_${index}" class="option-input" value="${opt}">
+            <label for="opt_${index}" class="option-label">${opt}</label>
+          </div>
+        `;
+      });
+
+      async function submitVote() {
+        // 收集所有被勾選的數值
+        const checkedBoxes = document.querySelectorAll('.option-input:checked');
+        const selectedWords = Array.from(checkedBoxes).map(cb => cb.value);
+        
+        if (selectedWords.length === 0) {
+          alert('請至少選擇一個選項！');
+          return;
+        }
+
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerText = '傳送中...';
+
+        try {
+          const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'submitWords', words: selectedWords })
+          });
+          const result = await response.json();
+          
+          if (result.status === 'success') {
+            document.getElementById('voteBox').innerHTML = `
+              <h2 style="color:#2e7d32;">🎉 投票成功！</h2>
+              <p style="text-align:center; color:#666;">感謝您的參與，請觀看前方大螢幕的即時文字雲。</p>
+            `;
+          }
+        } catch (error) {
+          console.error(error);
+          alert('連線失敗，請重新送出。');
+          btn.disabled = false;
+          btn.innerText = '送出投票';
+        }
+      }
+    </script>
+  </body>
+</html>
