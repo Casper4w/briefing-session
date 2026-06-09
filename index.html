@@ -16,8 +16,8 @@
       /* 自訂美化 Checkbox 樣式 */
       .option-label {
         display: block; padding: 12px; background: #f8fafc; border: 2px solid #e2e8f0;
-        border-radius: 8px; cursor: pointer; font-size: 15px; text-align: center;
-        transition: all 0.2s; user-select: none;
+        border-radius: 8px; cursor: pointer; font-size: 14px; text-align: center;
+        transition: all 0.2s; user-select: none; word-break: break-word;
       }
       .option-input { display: none; }
       .option-input:checked + .option-label {
@@ -46,14 +46,19 @@
     </div>
 
     <script>
+      // ★ 已替換為您專屬的 GAS 網址 ★
       const API_URL = 'https://script.google.com/macros/s/AKfycbxFNinnfKetaUQa4s07js1J0xB3SMztKc1vtCZYu4dAnq7N1exNlzzL65mC3VvRbarzdQ/exec';
 
-      // 🎯 在這裡直接修改您的 16 個選項文字
+      // ★ 已替換為您截圖中的 16 個 AI 工具選項 ★
       const options = [
-        "ChatGPT", "Google Gemini", "Perplexity", "Microsoft Copilot",
-        "Claude", "Google Ai Studio", "Canva AI", "Gamma",
-        "Adobe GenStudio", "Notion AI", "Midjourney", "Suno",
-        "DeepSeek", "Seedance2", "King AI", "豆包"
+        "ChatGPT", "Google Gemini", 
+        "Perplexity", "Microsoft Copilot",
+        "Claude", "Google Ai Studio", 
+        "Canva AI", "Gamma",
+        "Adobe GenStudio", "Notion AI", 
+        "Midjourney", "Suno",
+        "DeepSeek", "Seedance2", 
+        "King AI", "豆包"
       ];
 
       // 自動渲染 16 個選項
@@ -94,6 +99,10 @@
               <h2 style="color:#2e7d32;">🎉 投票成功！</h2>
               <p style="text-align:center; color:#666;">感謝您的參與，請觀看前方大螢幕的即時文字雲。</p>
             `;
+          } else {
+            alert('後端發生錯誤：\n' + result.message);
+            btn.disabled = false;
+            btn.innerText = '送出投票';
           }
         } catch (error) {
           console.error(error);
