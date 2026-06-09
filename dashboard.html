@@ -9,16 +9,34 @@
       body { font-family: '微軟正黑體', sans-serif; background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; overflow: hidden; }
       .header { text-align: center; margin-bottom: 10px; }
       h1 { font-size: 28px; margin: 0 0 5px 0; color: #38bdf8; }
-      .status { font-size: 14px; color: #94a3b8; }
-      #canvasContainer { width: 90vw; height: 75vh; margin: 0 auto; background: #1e293b; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); padding: 10px; }
+      .status { font-size: 14px; color: #94a3b8; margin-bottom: 10px; }
+      
+      /* ★ 新增：按鈕控制區的樣式 */
+      .controls { display: flex; justify-content: center; gap: 15px; margin-bottom: 15px; }
+      .btn { 
+        padding: 8px 20px; font-size: 16px; font-weight: bold; color: white; 
+        border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; 
+      }
+      .btn-update { background-color: #0288d1; }
+      .btn-update:hover { background-color: #0277bd; }
+      .btn-clear { background-color: #ef4444; }
+      .btn-clear:hover { background-color: #dc2626; }
+      .btn:disabled { background-color: #64748b; cursor: not-allowed; }
+
+      #canvasContainer { width: 90vw; height: 70vh; margin: 0 auto; background: #1e293b; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); padding: 10px; }
       canvas { width: 100%; height: 100%; }
     </style>
   </head>
   <body>
 
     <div class="header">
-      <h1>📊 現場焦點即時文字雲</h1>
+      <h1>📊 現場焦點文字雲</h1>
       <div class="status" id="statusText">系統準備中...</div>
+      
+      <div class="controls">
+        <button class="btn btn-update" id="updateBtn" onclick="updateCloud()">🔄 手動更新文字雲</button>
+        <button class="btn btn-clear" id="clearBtn" onclick="clearData()">🗑️ 清除所有資料</button>
+      </div>
     </div>
 
     <div id="canvasContainer">
@@ -26,10 +44,15 @@
     </div>
 
     <script>
-      // ★ 已替換為您專屬的 GAS 網址 ★
       const API_URL = 'https://script.google.com/macros/s/AKfycbxFNinnfKetaUQa4s07js1J0xB3SMztKc1vtCZYu4dAnq7N1exNlzzL65mC3VvRbarzdQ/exec';
       
+      // 更新文字雲
       async function updateCloud() {
+        const btn = document.getElementById('updateBtn');
+        btn.disabled = true;
+        btn.innerText = '同步中...';
+        document.getElementById('statusText').innerText = '正在同步現場數據...';
+
         try {
           const response = await fetch(API_URL, {
             method: 'POST',
@@ -41,8 +64,9 @@
           if (result.status === 'success') {
             if (result.data.length > 0) {
               draw(result.data);
-              document.getElementById('statusText').innerText = `自動同步中 (最後更新：${new Date().toLocaleTimeString()})`;
+              document.getElementById('statusText').innerText = `已更新 (最後更新時間：${new Date().toLocaleTimeString()})`;
             } else {
+              clearCanvas();
               document.getElementById('statusText').innerText = '目前尚無投票數據，等待觀眾掃碼...';
             }
           } else {
@@ -50,38 +74,94 @@
           }
         } catch (error) {
           console.error(error);
-          document.getElementById('statusText').innerText = '連線異常，正嘗試重新連線...';
+          document.getElementById('statusText').innerText = '連線異常，請重新點擊更新...';
         }
+        
+        btn.disabled = false;
+        btn.innerText = '🔄 手動更新文字雲';
       }
 
+      // ★ 新增：清除資料庫與畫面
+      async function clearData() {
+        // 防呆確認視窗
+        if (!confirm('⚠️ 確定要清除試算表內的所有投票資料嗎？\n此動作無法復原！')) {
+          return;
+        }
+
+        const btn = document.getElementById('clearBtn');
+        btn.disabled = true;
+        btn.innerText = '清除中...';
+
+        try {
+          const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'clearData' })
+          });
+          const result = await response.json();
+          
+          if (result.status === 'success') {
+            clearCanvas();
+            document.getElementById('statusText').innerText = '🗑️ 資料已歸零，可重新開始投票。';
+            alert('試算表資料已成功清除！');
+          }
+        } catch (error) {
+          alert('清除失敗，請檢查網路連線。');
+        }
+
+        btn.disabled = false;
+        btn.innerText = '🗑️ 清除所有資料';
+      }
+
+      // 清除畫布工具函式
+      function clearCanvas() {
+        const canvas = document.getElementById('cloudCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      // 繪製文字雲
       function draw(wordData) {
         const canvas = document.getElementById('cloudCanvas');
         const container = document.getElementById('canvasContainer');
-        
-        // 確保畫布解析度與容器相符
         canvas.width = container.clientWidth;
         canvas.height = container.clientHeight;
 
+        // ★ 新的差異化大小演算法 ★
+        // 1. 找出目前的最高票數
+        const maxCount = Math.max(...wordData.map(w => w[1]));
+        
+        // 2. 將原始票數轉換為「螢幕上的絕對大小(px)」
+        const displayData = wordData.map(w => {
+          const word = w[0];
+          const count = w[1];
+          
+          // 邏輯：基礎大小 20px。將票數除以最高票得比例，並用 1.5 次方指數放大差異，最大可加 80px。
+          let size = 20 + Math.pow(count / maxCount, 1.5) * 80;
+          
+          // 如果現場只投了一票，或所有人票數都一樣(maxCount為1)，則固定字體大小
+          if (maxCount === 1) size = 45; 
+          
+          return [word, size];
+        });
+
         WordCloud(canvas, { 
-          list: wordData,
-          gridSize: Math.round(canvas.width / 80),
-          weightFactor: 2.5, // 如果字太大或太小，可以微調這個數字
+          list: displayData,
+          gridSize: 15,
+          weightFactor: 1, // 因為已經在上一步算好絕對尺寸了，這裡設為 1 即可
           fontFamily: '微軟正黑體, Arial, sans-serif',
           color: function() {
-            // 深色背景下隨機產生明亮的顏色
             const colors = ['#38bdf8', '#34d399', '#f43f5e', '#fbbf24', '#a78bfa', '#fb7185', '#2dd4bf'];
             return colors[Math.floor(Math.random() * colors.length)];
           },
           backgroundColor: '#1e293b',
-          rotateRatio: 0.3 // 30% 垂直呈現
+          rotateRatio: 0.2, // 稍微降低轉向比例，讓字大時更好閱讀
+          shape: 'circle'
         });
       }
 
-      // 進入網頁立刻執行一次
+      // 進入網頁時預先抓取一次資料
       updateCloud();
-      
-      // 每 5 秒 (5000 毫秒) 自動重新拉取一次數據
-      setInterval(updateCloud, 5000);
     </script>
   </body>
 </html>
