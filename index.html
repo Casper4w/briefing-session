@@ -5,32 +5,108 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>說明會互動投票</title>
     <style>
-      body { font-family: '微軟正黑體', sans-serif; background-color: #f4f7f6; padding: 15px; margin: 0; }
-      .container { max-width: 500px; margin: 20px auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-      h2 { color: #333; font-size: 20px; margin-bottom: 8px; text-align: center; }
-      .subtitle { color: #666; font-size: 14px; text-align: center; margin-bottom: 20px; }
+      /* 全局基礎設定 */
+      body { 
+        font-family: '微軟正黑體', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+        background-color: #f0f4f8; 
+        margin: 0; 
+        padding: 20px 15px; 
+        color: #334155;
+      }
+
+      /* 內容主容器 */
+      .container { 
+        max-width: 600px; /* 電腦版最大寬度 */
+        margin: 0 auto; 
+        background: #ffffff; 
+        padding: 30px 25px; 
+        border-radius: 16px; 
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
+      }
+
+      h2 { 
+        font-size: 1.5rem; 
+        margin: 0 0 10px 0; 
+        text-align: center; 
+        color: #0f172a;
+      }
+
+      .subtitle { 
+        color: #64748b; 
+        font-size: 0.95rem; 
+        text-align: center; 
+        margin-bottom: 25px; 
+      }
       
-      /* 16個選項的網格排版 */
-      .options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 25px; }
+      /* ★ RWD 動態網格排版 ★ */
+      .options-grid { 
+        display: grid; 
+        /* 核心魔法：最小欄寬 140px，空間夠就自動增加欄數，不夠就自動換行 */
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+        gap: 15px; 
+        margin-bottom: 30px; 
+      }
       
       /* 自訂美化 Checkbox 樣式 */
       .option-label {
-        display: block; padding: 12px; background: #f8fafc; border: 2px solid #e2e8f0;
-        border-radius: 8px; cursor: pointer; font-size: 14px; text-align: center;
-        transition: all 0.2s; user-select: none; word-break: break-word;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 14px 10px; 
+        background: #f8fafc; 
+        border: 2px solid #e2e8f0;
+        border-radius: 10px; 
+        cursor: pointer; 
+        font-size: 1rem; 
+        font-weight: 500;
+        text-align: center;
+        transition: all 0.2s ease-in-out; 
+        user-select: none; 
+        word-break: break-word;
+        height: 100%;
+        box-sizing: border-box;
       }
+
       .option-input { display: none; }
+      
+      /* 被選取時的樣式 */
       .option-input:checked + .option-label {
-        background-color: #e1f5fe; border-color: #0288d1; color: #0288d1; font-weight: bold;
+        background-color: #e0f2fe; 
+        border-color: #0288d1; 
+        color: #0369a1; 
+        font-weight: 700;
+        box-shadow: 0 4px 6px rgba(2, 136, 209, 0.1);
       }
       
+      /* 送出按鈕樣式 */
       button { 
-        width: 100%; background-color: #0288d1; color: white; padding: 14px; 
-        border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; 
+        width: 100%; 
+        background-color: #0288d1; 
+        color: white; 
+        padding: 16px; 
+        border: none; 
+        border-radius: 10px; 
+        font-size: 1.1rem; 
+        font-weight: bold; 
+        cursor: pointer; 
+        transition: background-color 0.2s;
+        box-shadow: 0 4px 6px rgba(2, 136, 209, 0.2);
       }
+
       button:hover { background-color: #0277bd; }
-      button:disabled { background-color: #b0bec5; cursor: not-allowed; }
-      #msg { text-align: center; font-weight: bold; margin-top: 15px; color: #2e7d32; }
+      button:disabled { background-color: #94a3b8; cursor: not-allowed; box-shadow: none; }
+      
+      #msg { 
+        text-align: center; 
+        font-weight: bold; 
+        margin-top: 15px; 
+        color: #16a34a; 
+      }
+
+      /* 針對超小螢幕 (如舊款 iPhone) 的微調 */
+      @media (max-width: 350px) {
+        .options-grid { grid-template-columns: 1fr; /* 單欄顯示 */ }
+      }
     </style>
   </head>
   <body>
@@ -46,10 +122,10 @@
     </div>
 
     <script>
-      // ★ 已替換為您專屬的 GAS 網址 ★
+      // ★ 您的 GAS API 網址 ★
       const API_URL = 'https://script.google.com/macros/s/AKfycbxFNinnfKetaUQa4s07js1J0xB3SMztKc1vtCZYu4dAnq7N1exNlzzL65mC3VvRbarzdQ/exec';
 
-      // ★ 已替換為您截圖中的 16 個 AI 工具選項 ★
+      // ★ 16 個選項 (已將「豆包」替換為「其他」) ★
       const options = [
         "ChatGPT", "Google Gemini", 
         "Perplexity", "Microsoft Copilot",
@@ -96,8 +172,13 @@
           
           if (result.status === 'success') {
             document.getElementById('voteBox').innerHTML = `
-              <h2 style="color:#2e7d32;">🎉 投票成功！</h2>
-              <p style="text-align:center; color:#666;">感謝您的參與，請觀看前方大螢幕的即時文字雲。</p>
+              <div style="text-align:center; padding: 20px 0;">
+                <h2 style="color:#16a34a; font-size: 1.8rem; margin-bottom:15px;">🎉 投票成功！</h2>
+                <p style="color:#475569; font-size: 1.1rem; line-height: 1.6;">
+                  感謝您的參與<br>
+                  請觀看前方大螢幕的即時文字雲
+                </p>
+              </div>
             `;
           } else {
             alert('後端發生錯誤：\n' + result.message);
@@ -106,7 +187,7 @@
           }
         } catch (error) {
           console.error(error);
-          alert('連線失敗，請重新送出。');
+          alert('連線失敗，請檢查網路連線後重新送出。');
           btn.disabled = false;
           btn.innerText = '送出投票';
         }
