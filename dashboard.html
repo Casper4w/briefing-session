@@ -26,12 +26,11 @@
     </div>
 
     <script>
+      // ★ 已替換為您專屬的 GAS 網址 ★
       const API_URL = 'https://script.google.com/macros/s/AKfycbxFNinnfKetaUQa4s07js1J0xB3SMztKc1vtCZYu4dAnq7N1exNlzzL65mC3VvRbarzdQ/exec';
       
       async function updateCloud() {
         try {
-          document.getElementById('statusText').innerText = '正在同步現場數據...';
-          
           const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -39,15 +38,19 @@
           });
           const result = await response.json();
           
-          if (result.status === 'success' && result.data.length > 0) {
-            draw(result.data);
-            document.getElementById('statusText').innerText = `自動同步中 (最後更新：${new Date().toLocaleTimeString()})`;
+          if (result.status === 'success') {
+            if (result.data.length > 0) {
+              draw(result.data);
+              document.getElementById('statusText').innerText = `自動同步中 (最後更新：${new Date().toLocaleTimeString()})`;
+            } else {
+              document.getElementById('statusText').innerText = '目前尚無投票數據，等待觀眾掃碼...';
+            }
           } else {
-            document.getElementById('statusText').innerText = '目前尚無投票數據，等待觀眾掃碼...';
+            document.getElementById('statusText').innerText = '⚠️ 系統錯誤：' + result.message;
           }
         } catch (error) {
           console.error(error);
-          document.getElementById('statusText').innerText = '同步失敗，正嘗試重新連線...';
+          document.getElementById('statusText').innerText = '連線異常，正嘗試重新連線...';
         }
       }
 
@@ -62,15 +65,15 @@
         WordCloud(canvas, { 
           list: wordData,
           gridSize: Math.round(canvas.width / 80),
-          weightFactor: 2.5, // 字體放大倍率，可依現場狀況微調
+          weightFactor: 2.5, // 如果字太大或太小，可以微調這個數字
           fontFamily: '微軟正黑體, Arial, sans-serif',
           color: function() {
-            // 在深色背景下隨機產生明亮的顏色
+            // 深色背景下隨機產生明亮的顏色
             const colors = ['#38bdf8', '#34d399', '#f43f5e', '#fbbf24', '#a78bfa', '#fb7185', '#2dd4bf'];
             return colors[Math.floor(Math.random() * colors.length)];
           },
           backgroundColor: '#1e293b',
-          rotateRatio: 0.3 // 30% 的文字會垂直呈現，增加層次感
+          rotateRatio: 0.3 // 30% 垂直呈現
         });
       }
 
